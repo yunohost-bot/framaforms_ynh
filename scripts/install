@@ -1,9 +1,5 @@
 #!/bin/bash
 
-#=================================================
-# IMPORT GENERIC HELPERS
-#=================================================
-
 source _common.sh
 source /usr/share/yunohost/helpers
 
@@ -20,7 +16,6 @@ ynh_app_setting_set --key="password" --value="$password"
 #=================================================
 ynh_script_progression "Setting up source files..."
 
-# Download, check integrity, uncompress and patch the source from app.src
 ynh_setup_source --dest_dir="$install_dir/app"
 
 mkdir -p "$install_dir/app/sites/default/files"
@@ -39,12 +34,8 @@ chown -R "$app:www-data" "$data_dir"
 ynh_script_progression "Creating Drush alias..."
 
 mkdir -p "$install_dir/.drush"
-drush_aliasconfig="$install_dir/.drush/$app.aliases.drushrc.php"
 
-ynh_config_add --template="yoursite.aliases.drushrc.php" --destination="$drush_aliasconfig"
-
-chmod 400 "$drush_aliasconfig"
-chown "$app:$app" "$drush_aliasconfig"
+ynh_config_add --template="yoursite.aliases.drushrc.php" --destination="$install_dir/.drush/$app.aliases.drushrc.php"
 
 #=================================================
 # INSTALL COMPOSER
@@ -56,7 +47,7 @@ mkdir -p "$install_dir/.composer"
 ynh_config_add --template="composer.json" --destination="$install_dir/.composer/composer.json"
 
 ynh_composer_install
-ynh_composer_exec install --no-dev  # FIXMEhelpers2.1 (replace with composer_workdir=... prior to calling this helper, default is $intall_dir) --workdir="$install_dir/.composer"
+ynh_composer_exec install --no-dev
 
 #=================================================
 # ADD A CONFIGURATION
@@ -64,9 +55,6 @@ ynh_composer_exec install --no-dev  # FIXMEhelpers2.1 (replace with composer_wor
 ynh_script_progression "Adding $app's configuration file..."
 
 ynh_config_add --template="default.settings.php" --destination="$install_dir/app/sites/default/settings.php"
-
-#REMOVEME? Assuming the file is setup using ynh_config_add, the proper chmod/chowns are now already applied and it shouldn't be necessary to tweak perms | chmod 600 "$install_dir/app/sites/default/settings.php"
-#REMOVEME? Assuming the file is setup using ynh_config_add, the proper chmod/chowns are now already applied and it shouldn't be necessary to tweak perms | chown "$app:$app" "$install_dir/app/sites/default/settings.php"
 
 #=================================================
 # INSTALLING FRAMAFORMS WITH DRUSH
@@ -130,10 +118,8 @@ _ynh_exec_with_drush_php drush "@$app" variable-set --format=yaml ldap_authentic
 #=================================================
 ynh_script_progression "Adding system configurations related to $app..."
 
-# Create a dedicated PHP-FPM config
 ynh_config_add_phpfpm
 
-# Create a dedicated NGINX config
 ynh_config_add_nginx
 
 ynh_config_add --template="cron" --destination="/etc/cron.d/$app"

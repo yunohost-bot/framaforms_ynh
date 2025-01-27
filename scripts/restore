@@ -1,10 +1,5 @@
 #!/bin/bash
 
-#=================================================
-# IMPORT GENERIC HELPERS
-#=================================================
-
-# Keep this path for calling _common.sh inside the execution's context of backup and restore scripts
 source ../settings/scripts/_common.sh
 source /usr/share/yunohost/helpers
 
@@ -15,8 +10,6 @@ ynh_script_progression "Restoring the app main directory..."
 
 ynh_restore "$install_dir"
 
-#REMOVEME? Assuming the install dir is setup using ynh_setup_source, the proper chmod/chowns are now already applied and it shouldn't be necessary to tweak perms | chmod -R o-rwx "$install_dir"
-#REMOVEME? Assuming the install dir is setup using ynh_setup_source, the proper chmod/chowns are now already applied and it shouldn't be necessary to tweak perms | chown -R $app:www-data "$install_dir"
 chmod 2775 "$install_dir/app/sites/default/files"
 
 #=================================================
@@ -25,9 +18,6 @@ chmod 2775 "$install_dir/app/sites/default/files"
 ynh_script_progression "Restoring the data directory..."
 
 ynh_restore "$data_dir"
-
-chmod -R o-rwx "$data_dir"
-chown -R "$app:www-data" "$data_dir"
 
 #=================================================
 # RESTORE THE POSTGRESQL DATABASE
@@ -41,9 +31,7 @@ ynh_psql_db_shell < ./db.sql
 #=================================================
 ynh_script_progression "Restoring system configurations related to $app..."
 
-# Restore the file first, so it can have a backup if different
 ynh_restore "/etc/php/$php_version/fpm/pool.d/$app.conf"
-ynh_config_add_phpfpm
 
 ynh_restore "/etc/nginx/conf.d/$domain.d/$app.conf"
 
@@ -55,6 +43,7 @@ ynh_restore "/etc/cron.d/$app"
 ynh_script_progression "Reloading NGINX web server and PHP-FPM..."
 
 ynh_systemctl --service="php$php_version-fpm" --action=reload
+
 ynh_systemctl --service=nginx --action=reload
 
 #=================================================
